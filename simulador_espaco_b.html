@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Precificação · Espaço B</title>
+<style>
+  :root {
+    --rose: #C17B8A;
+    --rose-dark: #3D1A26;
+    --rose-light: #F2E6EA;
+    --rose-xlight: #FAF3F5;
+    --orange: #E07B3A;
+    --green: #2E7D32;
+    --green-light: #E8F5E9;
+    --blue: #1A56DB;
+    --gray: #6B7280;
+    --gray-light: #F3F4F6;
+    --dark: #1F2937;
+    --white: #FFFFFF;
+    --gold: #B45309;
+    --teal: #0F766E;
+    --teal-light: #CCFBF1;
+    --purple: #6B21A8;
+    --purple-light: #F3E8FF;
+    --radius: 14px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F7F2F4; color: var(--dark); font-size: 15px; }
+
+  /* NAV */
+  nav { background: var(--rose-dark); position: sticky; top: 0; z-index: 100; display: flex; align-items: center; gap: 0; overflow-x: auto; scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
+  .nav-logo { padding: 0 20px; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.5); white-space: nowrap; border-right: 1px solid rgba(255,255,255,0.12); height: 52px; display: flex; align-items: center; }
+  nav a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; font-weight: 500; padding: 0 18px; height: 52px; display: flex; align-items: center; white-space: nowrap; border-bottom: 3px solid transparent; transition: all .2s; }
+  nav a:hover, nav a.active { color: #fff; border-bottom-color: var(--rose); }
+
+  /* SECTIONS */
+  .page { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* SECTION HEADER */
+  .sec-header { margin-bottom: 24px; }
+  .sec-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: var(--rose); color: #fff; border-radius: 50%; font-size: 13px; font-weight: 700; margin-right: 10px; }
+  .sec-title { font-size: 22px; font-weight: 700; color: var(--rose-dark); display: flex; align-items: center; }
+  .sec-sub { font-size: 13px; color: var(--gray); margin-top: 6px; }
+
+  /* CARDS */
+  .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px 24px; margin-bottom: 16px; }
+  .card-title { font-size: 12px; font-weight: 600; color: var(--rose); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 16px; }
+
+  /* FIELD ROWS */
+  .field { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--gray-light); }
+  .field:last-child { border-bottom: none; }
+  .field-label { font-size: 14px; color: var(--dark); flex: 1; }
+  .field-right { display: flex; align-items: center; gap: 8px; }
+  .field input[type=number] {
+    width: 110px; padding: 7px 10px; border: 1.5px solid #E5E7EB;
+    border-radius: 8px; font-size: 15px; font-weight: 600; color: var(--blue);
+    text-align: right; background: var(--rose-xlight);
+    transition: border-color .15s;
+  }
+  .field input[type=number]:focus { outline: none; border-color: var(--rose); }
+  .field-unit { font-size: 12px; color: var(--gray); min-width: 28px; }
+
+  /* RESULT ROWS */
+  .result { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; background: var(--rose-light); border-radius: 10px; margin-top: 12px; }
+  .result-label { font-size: 13px; font-weight: 600; color: var(--dark); }
+  .result-value { font-size: 18px; font-weight: 700; color: var(--orange); }
+  .result.green .result-value { color: var(--green); }
+  .result.rose .result-value { color: var(--rose-dark); }
+
+  /* NOTA */
+  .nota { font-size: 12px; color: var(--gray); margin-top: 8px; padding: 8px 12px; background: var(--gray-light); border-radius: 8px; line-height: 1.5; }
+  .nota.gold { background: #FEF3C7; color: var(--gold); }
+  .nota.purple { background: var(--purple-light); color: var(--purple); }
+
+  /* MARGEM BUTTONS */
+  .margem-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .margem-btn { background: var(--gray-light); border: 2px solid transparent; border-radius: 12px; padding: 14px 10px; text-align: center; cursor: pointer; transition: all .15s; }
+  .margem-btn:hover { border-color: var(--rose); }
+  .margem-btn.active { background: var(--rose-light); border-color: var(--rose); }
+  .margem-btn .pct { font-size: 22px; font-weight: 700; color: var(--rose); }
+  .margem-btn .lbl { font-size: 11px; color: var(--gray); margin-top: 3px; }
+  .margem-btn .desc { font-size: 11px; color: var(--gray); margin-top: 2px; font-style: italic; }
+
+  /* PROCEDIMENTOS TABS */
+  .proc-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .proc-tab { padding: 8px 16px; border-radius: 20px; border: 1.5px solid #E5E7EB; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--gray); background: var(--white); transition: all .15s; }
+  .proc-tab:hover { border-color: var(--rose); color: var(--rose); }
+  .proc-tab.active { background: var(--rose-dark); color: #fff; border-color: var(--rose-dark); }
+
+  /* PROC GROUPS */
+  .proc-group { display: none; }
+  .proc-group.active { display: block; }
+  .proc-group-title { font-size: 12px; font-weight: 700; color: var(--rose); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+
+  .proc-item { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
+  .proc-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; cursor: pointer; }
+  .proc-name { font-size: 15px; font-weight: 600; color: var(--dark); }
+  .proc-badge { display: flex; gap: 8px; align-items: center; }
+  .badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-rose { background: var(--rose-light); color: var(--rose-dark); }
+  .badge-teal { background: var(--teal-light); color: var(--teal); }
+  .badge-orange { background: #FEF3C7; color: var(--gold); }
+  .chevron { font-size: 18px; color: var(--gray); transition: transform .2s; }
+  .proc-item.open .chevron { transform: rotate(180deg); }
+
+  .proc-body { display: none; padding: 0 20px 20px; border-top: 1px solid var(--gray-light); }
+  .proc-item.open .proc-body { display: block; }
+
+  .proc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .proc-field { }
+  .proc-field label { font-size: 11px; font-weight: 600; color: var(--gray); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .proc-field input { width: 100%; padding: 8px 10px; border: 1.5px solid #E5E7EB; border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--blue); text-align: right; background: var(--rose-xlight); }
+  .proc-field input:focus { outline: none; border-color: var(--rose); }
+
+  .proc-results { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .proc-result-card { border-radius: 10px; padding: 12px 14px; }
+  .prc-custo { background: #FEF9EC; }
+  .prc-total { background: var(--rose-light); }
+  .prc-preco { background: var(--green-light); }
+  .prc-5x { background: var(--teal-light); }
+  .prc-min { background: #FEF3C7; }
+  .prc-margem { background: var(--purple-light); }
+  .proc-result-card .prc-label { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+  .proc-result-card .prc-val { font-size: 18px; font-weight: 700; }
+  .prc-custo .prc-val { color: var(--orange); }
+  .prc-total .prc-val { color: var(--rose-dark); }
+  .prc-preco .prc-val { color: var(--green); }
+  .prc-5x .prc-val { color: var(--teal); font-size: 15px; }
+  .prc-min .prc-val { color: var(--gold); }
+  .prc-margem .prc-val { color: var(--purple); }
+
+  .tabela-pagamentos { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+  .tabela-pagamentos th { background: var(--rose-dark); color: #fff; padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .tabela-pagamentos td { padding: 10px 12px; border-bottom: 1px solid var(--gray-light); }
+  .tabela-pagamentos tr:last-child td { border-bottom: none; }
+  .tabela-pagamentos tr:nth-child(even) td { background: var(--rose-xlight); }
+  .tabela-pagamentos tr.row-5x td { background: var(--teal-light); font-weight: 700; }
+  .tabela-pagamentos tr.row-5x td:first-child::after { content: ' ⭐'; }
+  .td-right { text-align: right; }
+  .td-green { color: var(--green); font-weight: 600; }
+
+  /* SIMULADOR PAGAMENTO STANDALONE */
+  .sim-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .sim-btn { padding: 9px 18px; border-radius: 20px; border: 1.5px solid #E5E7EB; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--gray); background: var(--white); transition: all .15s; }
+  .sim-btn:hover { border-color: var(--rose); }
+  .sim-btn.active { background: var(--rose); color: #fff; border-color: var(--rose); }
+
+  /* PACOTES */
+  .pkg-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+  .pkg-header { background: var(--rose-dark); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .pkg-name { color: #fff; font-size: 16px; font-weight: 700; }
+  .pkg-price-preview { color: rgba(255,255,255,0.75); font-size: 13px; }
+  .pkg-body { padding: 20px; }
+  .pkg-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+  .pkg-table th { font-size: 11px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: .04em; padding: 6px 8px; border-bottom: 1px solid var(--gray-light); text-align: left; }
+  .pkg-table td { padding: 10px 8px; border-bottom: 1px solid var(--gray-light); }
+  .pkg-table tr:last-child td { border-bottom: none; }
+  .pkg-results { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .pkg-result { padding: 12px 14px; border-radius: 10px; }
+  .pkg-r-fixo { background: var(--purple-light); }
+  .pkg-r-total { background: var(--rose-light); }
+  .pkg-r-preco { background: var(--green-light); }
+  .pkg-r-5x { background: var(--teal-light); }
+  .pkg-r-pix { background: #FEF9EC; }
+  .pkg-r-lucro { background: var(--green-light); }
+  .pkg-result .pr-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--gray); margin-bottom: 4px; }
+  .pkg-result .pr-val { font-size: 18px; font-weight: 700; }
+  .pkg-r-fixo .pr-val { color: var(--purple); }
+  .pkg-r-total .pr-val { color: var(--rose-dark); }
+  .pkg-r-preco .pr-val { color: var(--green); }
+  .pkg-r-5x .pr-val { color: var(--teal); }
+  .pkg-r-pix .pr-val { color: var(--orange); font-size: 14px; }
+  .pkg-r-lucro .pr-val { color: var(--green); }
+
+  /* RESUMO */
+  .resumo-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .resumo-table th { background: var(--rose-dark); color: #fff; padding: 11px 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .resumo-table td { padding: 11px 12px; border-bottom: 1px solid var(--gray-light); }
+  .resumo-table tr:nth-child(even) td { background: var(--rose-xlight); }
+  .resumo-table tr:hover td { background: var(--rose-light); }
+  .resumo-table .r-preco { color: var(--green); font-weight: 700; }
+  .resumo-table .r-min { color: var(--gold); font-weight: 600; }
+  .resumo-table .r-lucro { color: var(--green); }
+  .resumo-table .r-marg { font-weight: 600; }
+
+  /* CONFIGURAÇÕES SUMMARY CARD */
+  .config-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .cs-item { background: var(--rose-xlight); border-radius: 10px; padding: 12px 14px; }
+  .cs-label { font-size: 11px; color: var(--gray); margin-bottom: 3px; }
+  .cs-val { font-size: 16px; font-weight: 700; color: var(--rose-dark); }
+
+  /* MOBILE */
+  @media(max-width: 600px) {
+    .proc-grid { grid-template-columns: 1fr 1fr; }
+    .proc-results { grid-template-columns: 1fr 1fr; }
+    .config-summary { grid-template-columns: 1fr 1fr; }
+    .pkg-results { grid-template-columns: 1fr 1fr; }
+    .margem-btns { grid-template-columns: 1fr 1fr; }
+    nav a { padding: 0 12px; font-size: 12px; }
+    .nav-logo { padding: 0 12px; font-size: 12px; }
+  }
+
+  /* FOOTER */
+  footer { text-align: center; font-size: 12px; color: var(--gray); padding: 24px; border-top: 1px solid #E5E7EB; margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Espaço B</div>
+  <a href="#" class="active" onclick="showSection('config',this)">⚙️ Config</a>
+  <a href="#" onclick="showSection('procedimentos',this)">💉 Procedimentos</a>
+  <a href="#" onclick="showSection('simulador',this)">💳 Simulador</a>
+  <a href="#" onclick="showSection('pacotes',this)">📦 Pacotes</a>
+  <a href="#" onclick="showSection('resumo',this)">📊 Resumo</a>
+</nav>
+
+<div class="page">
+
+<!-- ════════════════════════════════════════════════════════════
+     CONFIGURAÇÕES
+════════════════════════════════════════════════════════════ -->
+<div id="sec-config" class="section active">
+  <div class="sec-header">
+    <div class="sec-title"><span class="sec-num">1</span> Configurações da Clínica</div>
+    <div class="sec-sub">Todos os campos impactam os cálculos em tempo real em todas as abas</div>
+  </div>
+
+  <!-- REMUNERAÇÃO -->
+  <div class="card">
+    <div class="card-title">⏱ Sua Remuneração e Custo por Hora</div>
+    <div class="field">
+      <span class="field-label">Quanto você quer receber por mês (pró-labore)?</span>
+      <div class="field-right">
+        <input type="number" id="prolabore" value="15000" oninput="recalcAll()">
+        <span class="field-unit">R$</span>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label">Dias trabalhados por mês</span>
+      <div class="field-right">
+        <input type="number" id="dias" value="22" oninput="recalcAll()">
+        <span class="field-unit">dias</span>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label">Horas de atendimento por dia</span>
+      <div class="field-right">
+        <input type="number" id="horas" value="6" oninput="recalcAll()">
+        <span class="field-unit">h</span>
+      </div>
+    </div>
+    <div class="result">
+      <span class="result-label">⏱ Custo do seu tempo por hora</span>
+      <span class="result-value" id="custo-hora">R$ 113,64/h</span>
+    </div>
+    <div class="nota">Este valor é usado automaticamente no campo "tempo" de cada procedimento.</div>
+  </div>
+
+  <!-- CUSTOS FIXOS -->
+  <div class="card">
+    <div class="card-title">🏢 Estrutura e Operação</div>
+    <div class="field"><span class="field-label">Aluguel / condomínio</span><div class="field-right"><input type="number" id="aluguel" value="3380" oninput="recalcAll()"><span class="field-unit">R$</span></div></div>
+    <div class="field"><span class="field-label">Salários + encargos (funcionários)</span><div class="field-right"><input type="number" id="salarios" value="10555" oninput="recalcAll()"><span class="field-unit">R$</span></div></div>
+    <div class="field"><span class="field-label">Contador / assessoria</span><div class="field-right"><input type="number" id="contador" value="500" oninput="recalcAll()"><span class="field-unit">R$</span></div></div>
+    <div class="field"><span class="field-label">Energia / água / internet</span><div class="field-right"><input type="number" id="energia" value="730" oninput="recalcAll()"><span class="field-unit">R$</span></div></div>
+    <div class="field"><span class="field-label">Sistemas / software / assinaturas</span><div class="field-right"><input type="number" id="sistemas" value="320" oninput="recalcAll()"><span class="field-unit">R$</span></div></div>
+    <div class="field"><span class="field-label">Marketing / mídias sociais</span><div class="field-right"><input type="number" id="marketing" value="6500" oninput="recalcAll()"><span class="field-unit">R$</span></div></div>
+    <div class="field"><span class="field-label">Outros custos fixos</span><div class="field-right"><input type="number" id="outros-fixos" value="1000" oninput="recalcAll()"><span class="field-unit">R$</span></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔧 Equipamentos</div>
+    <div class="field"><span class="field-label">Manutenção preventiva / corretiva (média mensal)</span><div class="field-right"><input type="number" id="manutencao" value="833" oninput="recalcAll()"><span class="field-unit">R$</span></div></div>
+    <div class="field"><span class="field-label">Limpeza e higienização dos equipamentos</span><div class="field-right"><input type="number" id="limpeza-equip" value="0" oninput="recalcAll()"><span class="field-unit">R$</span></div></div>
+    <div class="field"><span class="field-label">Valor total dos equipamentos (patrimônio)</span><div class="field-right"><input type="number" id="patrimonio" value="202000" oninput="recalcAll()"><span class="field-unit">R$</span></div></div>
+    <div class="field"><span class="field-label">Vida útil estimada</span><div class="field-right"><input type="number" id="vida-util" value="10" oninput="recalcAll()"><span class="field-unit">anos</span></div></div>
+    <div class="result">
+      <span class="result-label">💰 Reserva mensal para reposição</span>
+      <span class="result-value" id="depreciacao">R$ 1.683,33</span>
+    </div>
+    <div class="nota gold">📌 Este valor NÃO é pago mensalmente — é uma provisão estratégica. Transfira mensalmente para uma conta separada (CDB/poupança) rotulada como "Reposição de Equipamentos".</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 Totais</div>
+    <div class="result rose">
+      <span class="result-label">💰 Total Fixo / mês</span>
+      <span class="result-value" id="total-fixo">R$ 25.501,33</span>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <span class="field-label">Procedimentos realizados / mês (para rateio)</span>
+      <div class="field-right"><input type="number" id="proc-mes" value="132" oninput="recalcAll()"><span class="field-unit">un</span></div>
+    </div>
+    <div class="result">
+      <span class="result-label">📊 Custo fixo rateado por procedimento</span>
+      <span class="result-value" id="custo-rateado">R$ 193,19</span>
+    </div>
+  </div>
+
+  <!-- TAXAS -->
+  <div class="card">
+    <div class="card-title">💳 Taxas da Maquininha</div>
+    <div class="field"><span class="field-label">Débito</span><div class="field-right"><input type="number" step="0.01" id="taxa-debito" value="0.82" oninput="recalcAll()"><span class="field-unit">%</span></div></div>
+    <div class="field"><span class="field-label">Crédito 1x</span><div class="field-right"><input type="number" step="0.01" id="taxa-1x" value="3.30" oninput="recalcAll()"><span class="field-unit">%</span></div></div>
+    <div class="field"><span class="field-label">Crédito 2x</span><div class="field-right"><input type="number" step="0.01" id="taxa-2x" value="4.43" oninput="recalcAll()"><span class="field-unit">%</span></div></div>
+    <div class="field"><span class="field-label">Crédito 3x</span><div class="field-right"><input type="number" step="0.01" id="taxa-3x" value="5.19" oninput="recalcAll()"><span class="field-unit">%</span></div></div>
+    <div class="field"><span class="field-label">Crédito 4x</span><div class="field-right"><input type="number" step="0.01" id="taxa-4x" value="5.90" oninput="recalcAll()"><span class="field-unit">%</span></div></div>
+    <div class="field"><span class="field-label">Crédito 5x ⭐ padrão da clínica</span><div class="field-right"><input type="number" step="0.01" id="taxa-5x" value="6.62" oninput="recalcAll()"><span class="field-unit">%</span></div></div>
+    <div class="field"><span class="field-label">Crédito 6x</span><div class="field-right"><input type="number" step="0.01" id="taxa-6x" value="7.20" oninput="recalcAll()"><span class="field-unit">%</span></div></div>
+    <div class="field"><span class="field-label">Crédito 10x</span><div class="field-right"><input type="number" step="0.01" id="taxa-10x" value="9.50" oninput="recalcAll()"><span class="field-unit">%</span></div></div>
+    <div class="field"><span class="field-label">Crédito 12x</span><div class="field-right"><input type="number" step="0.01" id="taxa-12x" value="11.72" oninput="recalcAll()"><span class="field-unit">%</span></div></div>
+  </div>
+
+  <!-- MARGEM -->
+  <div class="card">
+    <div class="card-title">📈 Margem de Lucro Padrão</div>
+    <div class="margem-btns">
+      <div class="margem-btn" onclick="setMargem(0.20,this)">
+        <div class="pct">20%</div><div class="lbl">Mínima</div><div class="desc">Operação enxuta</div>
+      </div>
+      <div class="margem-btn" onclick="setMargem(0.35,this)">
+        <div class="pct">35%</div><div class="lbl">Recomendada</div><div class="desc">Saudável</div>
+      </div>
+      <div class="margem-btn active" onclick="setMargem(0.40,this)">
+        <div class="pct">40%</div><div class="lbl">Atual</div><div class="desc">Padrão atual</div>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label">Margem personalizada</span>
+      <div class="field-right"><input type="number" step="1" id="margem-padrao" value="40" oninput="recalcAll()"><span class="field-unit">%</span></div>
+    </div>
+    <div class="field">
+      <span class="field-label">Regime tributário / impostos</span>
+      <div class="field-right"><input type="number" step="0.1" id="imposto" value="6" oninput="recalcAll()"><span class="field-unit">%</span></div>
+    </div>
+    <div class="nota">Simples Nacional faixa 1: ~6% · Lucro Presumido: ~13,33% · MEI: ~5%</div>
+    <div class="result green" style="margin-top:12px">
+      <span class="result-label">📈 Margem média dos procedimentos</span>
+      <span class="result-value" id="margem-media">32,4%</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     PROCEDIMENTOS
+════════════════════════════════════════════════════════════ -->
+<div id="sec-procedimentos" class="section">
+  <div class="sec-header">
+    <div class="sec-title"><span class="sec-num">2</span> Procedimentos</div>
+    <div class="sec-sub">Clique em um procedimento para ver custos e preços detalhados</div>
+  </div>
+
+  <div class="proc-tabs" id="proc-tabs"></div>
+  <div id="proc-groups"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     SIMULADOR DE PAGAMENTO
+════════════════════════════════════════════════════════════ -->
+<div id="sec-simulador" class="section">
+  <div class="sec-header">
+    <div class="sec-title"><span class="sec-num">3</span> Simulador de Pagamento</div>
+    <div class="sec-sub">Selecione o procedimento e veja o preço em cada forma de pagamento</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Selecione o procedimento</div>
+    <div class="sim-selector" id="sim-selector"></div>
+  </div>
+
+  <div class="card" id="sim-result-card">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="proc-result-card prc-total"><div class="prc-label">Custo Total</div><div class="prc-val" id="sim-custo">—</div></div>
+      <div class="proc-result-card prc-preco"><div class="prc-label">Preço (5x embutido)</div><div class="prc-val" id="sim-preco">—</div></div>
+      <div class="proc-result-card prc-5x"><div class="prc-label">Parcela em 5x</div><div class="prc-val" id="sim-parcela">—</div></div>
+    </div>
+    <table class="tabela-pagamentos">
+      <thead><tr>
+        <th>Modalidade</th><th>Taxa</th><th>Taxa R$</th>
+        <th class="td-right">Preço a cobrar</th><th class="td-right">Lucro</th><th class="td-right">Margem real</th>
+      </tr></thead>
+      <tbody id="sim-tabela"></tbody>
+    </table>
+    <div class="nota" style="margin-top:12px">⭐ Política da clínica: todos os procedimentos em até 5x sem juros (taxa embutida no preço). Parcelamentos acima de 5x com acréscimo.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     PACOTES
+════════════════════════════════════════════════════════════ -->
+<div id="sec-pacotes" class="section">
+  <div class="sec-header">
+    <div class="sec-title"><span class="sec-num">4</span> Simulador de Pacotes</div>
+    <div class="sec-sub">Monte ou ajuste um pacote em tempo real para negociar com a cliente — preços e margens editáveis na hora</div>
+  </div>
+
+  <!-- SELETOR DE PROTOCOLO -->
+  <div class="card">
+    <div class="card-title">📋 Carregar Protocolo Pré-cadastrado</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="pkg-preset-btns"></div>
+    <div class="nota">Clique num protocolo para carregar e editar, ou monte do zero com o botão abaixo.</div>
+  </div>
+
+  <!-- SIMULADOR INTERATIVO -->
+  <div class="card" id="pkg-sim-card">
+    <!-- Nome do pacote -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <input type="text" id="pkg-sim-nome" value="Novo Pacote"
+        style="flex:1;padding:10px 14px;border:2px solid var(--rose);border-radius:10px;font-size:17px;font-weight:700;color:var(--rose-dark);background:var(--rose-xlight)">
+      <button onclick="pkgSimNovo()"
+        style="padding:10px 16px;background:var(--rose-dark);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">
+        + Novo
+      </button>
+    </div>
+
+    <!-- TABELA DE PROCEDIMENTOS DO PACOTE -->
+    <div class="card-title">💉 Procedimentos do Pacote</div>
+    <table class="pkg-table" id="pkg-sim-table">
+      <thead>
+        <tr>
+          <th>Procedimento</th>
+          <th class="td-right" style="width:90px">Sessões</th>
+          <th class="td-right">Custo Unit.</th>
+          <th class="td-right">Subtotal</th>
+          <th style="width:44px"></th>
+        </tr>
+      </thead>
+      <tbody id="pkg-sim-tbody"></tbody>
+    </table>
+
+    <!-- ADICIONAR PROCEDIMENTO -->
+    <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+      <select id="pkg-add-select"
+        style="flex:1;padding:9px 12px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;color:var(--dark);background:#fff">
+        <option value="">— Selecionar procedimento —</option>
+      </select>
+      <button onclick="pkgSimAddProc()"
+        style="padding:9px 16px;background:var(--rose);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+        + Adicionar
+      </button>
+    </div>
+
+    <!-- MARGEM EDITÁVEL -->
+    <div style="display:flex;align-items:center;gap:10px;margin-top:20px;padding:14px 16px;background:var(--purple-light);border-radius:10px">
+      <span style="font-size:13px;font-weight:600;color:var(--purple);flex:1">📈 Margem do Pacote</span>
+      <input type="number" id="pkg-sim-margem" value="50" min="0" max="90" step="1" oninput="pkgSimCalc()"
+        style="width:80px;padding:7px 10px;border:1.5px solid #C4B5FD;border-radius:8px;font-size:15px;font-weight:700;color:var(--purple);text-align:right;background:#fff">
+      <span style="font-size:13px;color:var(--purple)">%</span>
+    </div>
+
+    <!-- RESULTADOS -->
+    <div id="pkg-sim-results" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     RESUMO GERAL
+════════════════════════════════════════════════════════════ -->
+<div id="sec-resumo" class="section">
+  <div class="sec-header">
+    <div class="sec-title"><span class="sec-num">5</span> Resumo Geral</div>
+    <div class="sec-sub">Todos os procedimentos — preço base 5x sem juros embutido</div>
+  </div>
+  <div class="card" style="overflow-x:auto">
+    <table class="resumo-table" id="resumo-tabela">
+      <thead><tr>
+        <th>Procedimento</th>
+        <th class="td-right">Custo</th>
+        <th class="td-right">Preço (5x)</th>
+        <th class="td-right">Parcela 5x</th>
+        <th class="td-right">Lucro</th>
+        <th class="td-right">Margem</th>
+        <th class="td-right">Preço Mín.</th>
+      </tr></thead>
+      <tbody id="resumo-body"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<footer>Espaço B · Calculadora de Precificação Estética · Os valores são estimativas — consulte sempre um contador.</footer>
+
+<script>
+// ═══════════════════════════════════════════════════
+// DATA — todos os procedimentos da planilha real
+// ═══════════════════════════════════════════════════
+const PROCS = [
+  // [nome, grupo, insumos, descartaveis, outros, tempo_min, margem, obs]
+  ['Botox — Terço Superior','Botox',250,20,15,30,0.45,'~50U toxina botulínica'],
+  ['Botox — Full Face','Botox',420,20,15,30,0.55,'~60U toxina botulínica'],
+  ['Preenchimento Harmonização — 1ml','Preenchimento',300,25,15,60,0.40,'1ml AH facial (labial/malar/rinomod/mandíbula/mento/bigode chinês)'],
+  ['Preenchimento Peniano — 10ml','Preenchimento',3000,50,30,240,0.40,'10ml AH específico — produto diferenciado'],
+  ['Preenchimento Glúteo — 40ml','Preenchimento',8000,80,50,240,0.40,'40ml AH volume — produto diferenciado'],
+  ['Microagulhamento — Face','Microagulhamento',0,30,15,10,0.30,'Ativo cosmético + agulha descartável'],
+  ['Peeling - Face','Peeling',30,0,15,10,0.30,'Peeling químico facial'],
+  ['Lifting Facial — Face (protocolo)','Lifting',100,100,20,120,0.60,'Inclui preenchimentos ~5ml AH; 4h'],
+  ['Lipocrio — Abdomen Completo','Lipocrio',95,0,0,360,0.30,'PJ inclusa; 6h sessão'],
+  ['Lipocrio — Costas Completa','Lipocrio',95,0,0,240,0.30,'PJ inclusa; 12h'],
+  ['Lipocrio — Flancos','Lipocrio',30,0,0,120,0.30,'PJ inclusa'],
+  ['Lipocrio — Interno de Coxas','Lipocrio',30,0,0,120,0.30,'PJ inclusa; 1h'],
+  ['Lipocrio — Braços','Lipocrio',30,0,0,180,0.30,'PJ inclusa; 1h'],
+  ['Lipocrio — Rosto / Pescoço','Lipocrio',30,0,0,60,0.30,'PJ inclusa; geralmente 3 sessões; 2h'],
+  ['Lipocrio — Pré-Crio (preparo)','Lipocrio',40,0,0,60,0.30,'Preparo corporal antes da sessão; 2h'],
+  ['Lipocrio — Pós-Crio (drenagem)','Lipocrio',40,0,0,60,0.30,'Drenagem/massagem pós-sessão; 1h'],
+  ['Manutenção Lipocrio — Sessão Avulsa','Lipocrio',50,0,0,60,0.30,'Sessão manutenção pós-lipocrio; PJ inclusa'],
+  ['Limpeza de Pele — Face','Limpeza de Pele',30,15,10,120,0.30,'PJ inclusa nos salários/encargos; 2h'],
+  ['LED — Axilas','LED',20,0,0,5,0.30,'Gel condutor + proteção; PJ inclusa'],
+  ['LED — Buço','LED',20,0,0,5,0.30,'Gel condutor + proteção; PJ inclusa'],
+  ['LED — Queixo','LED',20,0,0,5,0.30,'Gel condutor + proteção; PJ inclusa'],
+  ['LED — Linha Alba','LED',20,0,0,5,0.30,'Gel condutor + proteção; PJ inclusa'],
+  ['LED — Faixa de Barba','LED',20,0,0,5,0.30,'Gel condutor + proteção; PJ inclusa'],
+  ['LED — Rosto Todo','LED',20,0,0,10,0.30,'Gel condutor + proteção; PJ inclusa'],
+  ['LED — Virilha Completa','LED',20,0,0,10,0.30,'Gel condutor + proteção; PJ inclusa'],
+  ['LED — Tronco e Abdômen (Homem)','LED',20,0,0,15,0.30,'Gel condutor + proteção; PJ inclusa'],
+  ['LED — Costas','LED',20,0,0,15,0.30,'Gel condutor + proteção; PJ inclusa'],
+  ['LED — Meia Perna','LED',20,0,0,15,0.30,'Gel condutor + proteção; PJ inclusa'],
+  ['LED — Perna Inteira','LED',20,0,0,30,0.30,'Gel condutor + proteção; PJ inclusa'],
+];
+
+// Margem individual por procedimento (editável via UI)
+const procMargens = PROCS.map(p => p[6]);
+
+// Pacotes reais da planilha
+// [nome, [[proc_nome, qtd], ...], margem_pacote]
+const PACOTES = [
+  ['Pele Perfeita',
+    [['Botox — Full Face',1],['Microagulhamento — Face',1],['Peeling - Face',5]],
+    0.50],
+  ['Refinamento Facial',
+    [['Preenchimento Harmonização — 1ml',5]],
+    0.40],
+  ['Lifting Facial Completo',
+    [['Lifting Facial — Face (protocolo)',1],['Preenchimento Harmonização — 1ml',6]],
+    0.55],
+  ['Lipocrio 360',
+    [['Lipocrio — Pré-Crio (preparo)',3],['Lipocrio — Abdomen Completo',1],['Lipocrio — Costas Completa',1],['Lipocrio — Pós-Crio (drenagem)',6]],
+    0.50],
+  ['Lipocrio (Abdômen + Flancos)',
+    [['Lipocrio — Pré-Crio (preparo)',3],['Lipocrio — Abdomen Completo',1],['Lipocrio — Flancos',1],['Lipocrio — Pós-Crio (drenagem)',3]],
+    0.50],
+  ['Pacote Manutenção Lipocrio',
+    [['Manutenção Lipocrio — Sessão Avulsa',3]],
+    0.40],
+  ['Pacotes LED',
+    [['LED — Virilha Completa',10],['LED — Meia Perna',10]],
+    0.30],
+];
+
+const TAXAS = [
+  ['Débito','debito',0.0082],
+  ['Crédito 1x','1x',0.0330],
+  ['Crédito 2x','2x',0.0443],
+  ['Crédito 3x','3x',0.0519],
+  ['Crédito 4x','4x',0.0590],
+  ['Crédito 5x','5x',0.0662],
+  ['Crédito 6x','6x',0.0720],
+  ['Crédito 10x','10x',0.0950],
+  ['Crédito 12x','12x',0.1172],
+];
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+const R = v => 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2});
+const P = v => (v*100).toFixed(1).replace('.',',') + '%';
+
+function getCfg() {
+  const g = id => parseFloat(document.getElementById(id)?.value)||0;
+  const prolabore = g('prolabore'), dias = g('dias'), horas = g('horas');
+  const custoHora = (dias>0&&horas>0) ? prolabore/(dias*horas) : 0;
+  const totalEstrutura = g('aluguel')+g('salarios')+g('contador')+g('energia')+g('sistemas')+g('marketing')+g('outros-fixos');
+  const depreciacao = (g('patrimonio')>0&&g('vida-util')>0) ? g('patrimonio')/(g('vida-util')*12) : 0;
+  const totalFixo = totalEstrutura + g('manutencao') + g('limpeza-equip') + depreciacao;
+  const procMes = g('proc-mes')||1;
+  const rateio = totalFixo / procMes;
+  const margem = g('margem-padrao')/100;
+  const imposto = g('imposto')/100;
+  const taxa5x = g('taxa-5x')/100;
+  return {custoHora, depreciacao, totalFixo, rateio, margem, imposto, taxa5x};
+}
+
+function calcProc(idx) {
+  const p = PROCS[idx];
+  const [,, ins, desc, outros, tempo] = p;
+  const {custoHora, rateio, imposto, taxa5x} = getCfg();
+  const margem = procMargens[idx];
+  const custoVar = ins + desc + outros + (tempo/60)*custoHora;
+  const custoTotal = custoVar + rateio;
+  const denom5x = 1 - margem - imposto - taxa5x;
+  const preco5x = denom5x > 0 ? custoTotal/denom5x : 0;
+  const parcela5x = preco5x/5;
+  const denomMin = 1 - imposto - taxa5x;
+  const precoMin = denomMin > 0 ? custoTotal/denomMin : 0;
+  return {custoVar, custoTotal, preco5x, parcela5x, precoMin, margem};
+}
+
+function calcPkg(pkgIdx) {
+  const [, items, margemPkg] = PACOTES[pkgIdx];
+  const {rateio, imposto, taxa5x} = getCfg();
+  const {custoHora} = getCfg();
+  let somaVar = 0;
+  const rows = items.map(([nome, qtd]) => {
+    const pi = PROCS.findIndex(p=>p[0]===nome);
+    let custoVar = 0;
+    if (pi>=0) {
+      const [,,ins,desc,outros,tempo] = PROCS[pi];
+      custoVar = ins+desc+outros+(tempo/60)*custoHora;
+    }
+    const sub = custoVar*qtd;
+    somaVar += sub;
+    return {nome, qtd, custoVar, sub};
+  });
+  const custoTotal = somaVar + rateio;
+  const denom = 1 - margemPkg - imposto - taxa5x;
+  const preco = denom > 0 ? custoTotal/denom : 0;
+  const parcela5x = preco/5;
+  const precoDebito = denom > 0 ? custoTotal/(1-margemPkg-imposto-(parseFloat(document.getElementById('taxa-debito')?.value)||0.82)/100) : 0;
+  const lucro = preco - custoTotal - preco*taxa5x - preco*imposto;
+  return {rows, somaVar, rateio, custoTotal, margemPkg, preco, parcela5x, precoDebito, lucro};
+}
+
+function precoComTaxa(custoTotal, margem, imposto, taxaPct) {
+  const t = taxaPct/100;
+  const d = 1 - margem - imposto - t;
+  return d > 0 ? custoTotal/d : 0;
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER PROCEDIMENTOS
+// ═══════════════════════════════════════════════════
+function buildProcTabs() {
+  const groups = [...new Set(PROCS.map(p=>p[1]))];
+  const tabsEl = document.getElementById('proc-tabs');
+  const groupsEl = document.getElementById('proc-groups');
+  tabsEl.innerHTML = '';
+  groupsEl.innerHTML = '';
+
+  groups.forEach((grp, gi) => {
+    const btn = document.createElement('div');
+    btn.className = 'proc-tab' + (gi===0?' active':'');
+    btn.textContent = grp;
+    btn.onclick = () => {
+      document.querySelectorAll('.proc-tab').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.proc-group').forEach(g=>g.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('pg-'+gi).classList.add('active');
+    };
+    tabsEl.appendChild(btn);
+
+    const grpDiv = document.createElement('div');
+    grpDiv.className = 'proc-group' + (gi===0?' active':'');
+    grpDiv.id = 'pg-'+gi;
+
+    PROCS.forEach((p, pi) => {
+      if (p[1]!==grp) return;
+      const [nome,,ins,desc,outros,tempo,,obs] = p;
+      const item = document.createElement('div');
+      item.className = 'proc-item';
+      item.id = 'proc-item-'+pi;
+      item.innerHTML = `
+        <div class="proc-header" onclick="toggleProc(${pi},this)">
+          <div>
+            <div class="proc-name">${nome}</div>
+            <div style="font-size:12px;color:var(--gray);margin-top:2px">${obs}</div>
+          </div>
+          <div class="proc-badge">
+            <span class="badge badge-green" id="badge-preco-${pi}">—</span>
+            <span class="badge badge-teal" id="badge-5x-${pi}">—/5x</span>
+            <span class="chevron">⌄</span>
+          </div>
+        </div>
+        <div class="proc-body">
+          <div class="proc-grid">
+            <div class="proc-field"><label>Insumos (R$)</label><input type="number" id="pi-ins-${pi}" value="${ins}" oninput="updateProc(${pi})"></div>
+            <div class="proc-field"><label>Descartáveis (R$)</label><input type="number" id="pi-desc-${pi}" value="${desc}" oninput="updateProc(${pi})"></div>
+            <div class="proc-field"><label>Outros insumos (R$)</label><input type="number" id="pi-outros-${pi}" value="${outros}" oninput="updateProc(${pi})"></div>
+            <div class="proc-field"><label>Tempo (min)</label><input type="number" id="pi-tempo-${pi}" value="${tempo}" oninput="updateProc(${pi})"></div>
+            <div class="proc-field"><label>Margem (%)</label><input type="number" id="pi-margem-${pi}" value="${Math.round(procMargens[pi]*100)}" oninput="updateProc(${pi})"></div>
+          </div>
+          <div class="proc-results">
+            <div class="proc-result-card prc-custo"><div class="prc-label">Custo Variável</div><div class="prc-val" id="pv-var-${pi}">—</div></div>
+            <div class="proc-result-card prc-total"><div class="prc-label">Custo Total</div><div class="prc-val" id="pv-tot-${pi}">—</div></div>
+            <div class="proc-result-card prc-preco"><div class="prc-label">Preço (5x embutido)</div><div class="prc-val" id="pv-preco-${pi}">—</div></div>
+            <div class="proc-result-card prc-5x"><div class="prc-label">Parcela em 5x</div><div class="prc-val" id="pv-5x-${pi}">—</div></div>
+            <div class="proc-result-card prc-min"><div class="prc-label">Preço Mínimo</div><div class="prc-val" id="pv-min-${pi}">—</div></div>
+            <div class="proc-result-card prc-margem"><div class="prc-label">Margem configurada</div><div class="prc-val" id="pv-marg-${pi}">—</div></div>
+          </div>
+          <table class="tabela-pagamentos" style="margin-top:16px">
+            <thead><tr><th>Modalidade</th><th>Taxa</th><th class="td-right">Preço a cobrar</th><th class="td-right">Lucro</th><th class="td-right">Margem real</th></tr></thead>
+            <tbody id="ptab-${pi}"></tbody>
+          </table>
+        </div>`;
+      grpDiv.appendChild(item);
+    });
+    groupsEl.appendChild(grpDiv);
+  });
+}
+
+function toggleProc(pi, hdr) {
+  const item = document.getElementById('proc-item-'+pi);
+  item.classList.toggle('open');
+}
+
+function updateProc(pi) {
+  const g = id => parseFloat(document.getElementById(id)?.value)||0;
+  PROCS[pi][2] = g('pi-ins-'+pi);
+  PROCS[pi][3] = g('pi-desc-'+pi);
+  PROCS[pi][4] = g('pi-outros-'+pi);
+  PROCS[pi][5] = g('pi-tempo-'+pi);
+  procMargens[pi] = g('pi-margem-'+pi)/100;
+  renderProc(pi);
+  renderResumo();
+  renderPacotes();
+}
+
+function renderProc(pi) {
+  const {custoVar,custoTotal,preco5x,parcela5x,precoMin,margem} = calcProc(pi);
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('pv-var-'+pi, R(custoVar));
+  set('pv-tot-'+pi, R(custoTotal));
+  set('pv-preco-'+pi, R(preco5x));
+  set('pv-5x-'+pi, R(parcela5x)+'/parc.');
+  set('pv-min-'+pi, R(precoMin));
+  set('pv-marg-'+pi, P(margem));
+  set('badge-preco-'+pi, R(preco5x));
+  set('badge-5x-'+pi, R(parcela5x)+'/5x');
+
+  // tabela pagamentos
+  const tbody = document.getElementById('ptab-'+pi);
+  if (!tbody) return;
+  const {imposto} = getCfg();
+  tbody.innerHTML = '';
+  TAXAS.forEach(([nome, key, taxaDef]) => {
+    const inputId = 'taxa-' + key;
+    const taxaEl = document.getElementById(inputId);
+    const taxa = taxaEl ? parseFloat(taxaEl.value)/100 : taxaDef;
+    const preco = precoComTaxa(custoTotal, margem, imposto, taxa*100);
+    const lucro = preco - custoTotal - preco*taxa - preco*imposto;
+    const mr = preco > 0 ? lucro/preco : 0;
+    const is5x = key==='5x';
+    const tr = document.createElement('tr');
+    if (is5x) tr.className='row-5x';
+    tr.innerHTML = `<td>${nome}</td><td>${(taxa*100).toFixed(2).replace('.',',')}%</td>
+      <td class="td-right">${R(preco)}</td>
+      <td class="td-right td-green">${R(lucro)}</td>
+      <td class="td-right">${P(mr)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER SIMULADOR
+// ═══════════════════════════════════════════════════
+let simIdx = 0;
+function buildSimSelector() {
+  const el = document.getElementById('sim-selector');
+  el.innerHTML = '';
+  PROCS.forEach((p,i)=>{
+    const btn = document.createElement('div');
+    btn.className = 'sim-btn' + (i===0?' active':'');
+    btn.textContent = p[0];
+    btn.onclick = () => {
+      document.querySelectorAll('.sim-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      simIdx=i; renderSimulador();
+    };
+    el.appendChild(btn);
+  });
+}
+
+function renderSimulador() {
+  const {custoTotal,preco5x,parcela5x,margem} = calcProc(simIdx);
+  const {imposto} = getCfg();
+  document.getElementById('sim-custo').textContent = R(custoTotal);
+  document.getElementById('sim-preco').textContent = R(preco5x);
+  document.getElementById('sim-parcela').textContent = R(parcela5x)+'/parc.';
+  const tbody = document.getElementById('sim-tabela');
+  tbody.innerHTML = '';
+  TAXAS.forEach(([nome,key,taxaDef])=>{
+    const taxaEl = document.getElementById('taxa-'+key);
+    const taxa = taxaEl ? parseFloat(taxaEl.value)/100 : taxaDef;
+    const preco = precoComTaxa(custoTotal, margem, imposto, taxa*100);
+    const lucro = preco - custoTotal - preco*taxa - preco*imposto;
+    const mr = preco>0?lucro/preco:0;
+    const is5x = key==='5x';
+    const tr = document.createElement('tr');
+    if(is5x) tr.className='row-5x';
+    tr.innerHTML = `<td>${nome}</td><td>${(taxa*100).toFixed(2).replace('.',',')}%</td>
+      <td>${R(preco*taxa)}</td>
+      <td class="td-right">${R(preco)}</td>
+      <td class="td-right td-green">${R(lucro)}</td>
+      <td class="td-right">${P(mr)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// SIMULADOR DE PACOTES INTERATIVO
+// ═══════════════════════════════════════════════════
+
+// Estado do simulador: lista de {procIdx, qtd}
+let pkgSimItems = [];
+
+function renderPacotes() {
+  // Monta os botões de protocolo pré-cadastrado
+  const btnsEl = document.getElementById('pkg-preset-btns');
+  if (!btnsEl) return;
+  btnsEl.innerHTML = '';
+  PACOTES.forEach((pkg, pi) => {
+    const btn = document.createElement('button');
+    btn.textContent = '📋 ' + pkg[0];
+    btn.style.cssText = 'padding:8px 16px;border-radius:20px;border:1.5px solid var(--rose);background:#fff;color:var(--rose-dark);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s';
+    btn.onmouseover = () => { btn.style.background = 'var(--rose)'; btn.style.color = '#fff'; };
+    btn.onmouseout = () => { btn.style.background = '#fff'; btn.style.color = 'var(--rose-dark)'; };
+    btn.onclick = () => pkgSimCarregar(pi);
+    btnsEl.appendChild(btn);
+  });
+
+  // Popula o select de procedimentos
+  const sel = document.getElementById('pkg-add-select');
+  if (sel) {
+    sel.innerHTML = '<option value="">— Selecionar procedimento —</option>';
+    PROCS.forEach((p, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = p[0];
+      sel.appendChild(opt);
+    });
+  }
+
+  // Se ainda não tem itens, carrega o primeiro pacote por padrão
+  if (pkgSimItems.length === 0 && PACOTES.length > 0) {
+    pkgSimCarregar(0);
+  } else {
+    pkgSimRender();
+  }
+}
+
+function pkgSimCarregar(pi) {
+  const pkg = PACOTES[pi];
+  document.getElementById('pkg-sim-nome').value = pkg[0];
+  document.getElementById('pkg-sim-margem').value = Math.round(pkg[2] * 100);
+  pkgSimItems = pkg[1].map(([nome, qtd]) => {
+    const idx = PROCS.findIndex(p => p[0] === nome);
+    return { procIdx: idx >= 0 ? idx : null, nomeCustom: idx < 0 ? nome : null, qtd };
+  }).filter(x => x.procIdx !== null);
+  pkgSimRender();
+}
+
+function pkgSimNovo() {
+  document.getElementById('pkg-sim-nome').value = 'Novo Pacote';
+  document.getElementById('pkg-sim-margem').value = '40';
+  pkgSimItems = [];
+  pkgSimRender();
+}
+
+function pkgSimAddProc() {
+  const sel = document.getElementById('pkg-add-select');
+  const idx = parseInt(sel.value);
+  if (isNaN(idx)) return;
+  // Se já existe, aumenta qtd
+  const existing = pkgSimItems.find(x => x.procIdx === idx);
+  if (existing) { existing.qtd++; }
+  else { pkgSimItems.push({ procIdx: idx, qtd: 1 }); }
+  sel.value = '';
+  pkgSimRender();
+}
+
+function pkgSimRemove(i) {
+  pkgSimItems.splice(i, 1);
+  pkgSimRender();
+}
+
+function pkgSimUpdateQtd(i, val) {
+  const v = parseInt(val);
+  if (v > 0) pkgSimItems[i].qtd = v;
+  pkgSimCalc();
+}
+
+function pkgSimRender() {
+  const tbody = document.getElementById('pkg-sim-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const {custoHora} = getCfg();
+
+  pkgSimItems.forEach((item, i) => {
+    const p = PROCS[item.procIdx];
+    const [,,ins,desc,outros,tempo] = p;
+    const custoVar = ins + desc + outros + (tempo/60)*custoHora;
+    const sub = custoVar * item.qtd;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-size:13px">${p[0]}</td>
+      <td class="td-right">
+        <input type="number" value="${item.qtd}" min="1"
+          style="width:70px;padding:5px 8px;border:1.5px solid #E5E7EB;border-radius:6px;font-size:14px;font-weight:600;color:var(--blue);text-align:right;background:var(--rose-xlight)"
+          oninput="pkgSimUpdateQtd(${i}, this.value)">
+      </td>
+      <td class="td-right" style="font-size:13px;color:var(--gray)">${R(custoVar)}</td>
+      <td class="td-right" style="font-size:13px;font-weight:600">${R(sub)}</td>
+      <td class="td-right">
+        <button onclick="pkgSimRemove(${i})"
+          style="background:none;border:none;cursor:pointer;color:#EF4444;font-size:18px;padding:2px 6px;border-radius:6px;line-height:1"
+          title="Remover">×</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  if (pkgSimItems.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px;font-size:13px">
+      Nenhum procedimento adicionado — use o seletor abaixo ou carregue um protocolo.</td></tr>`;
+  }
+
+  pkgSimCalc();
+}
+
+function pkgSimCalc() {
+  const {custoHora, rateio, imposto, taxa5x} = getCfg();
+  const taxaDebito = (parseFloat(document.getElementById('taxa-debito')?.value) || 0.82) / 100;
+  const margemPct = parseFloat(document.getElementById('pkg-sim-margem')?.value) || 40;
+  const margem = margemPct / 100;
+
+  let somaVar = 0;
+  pkgSimItems.forEach(item => {
+    const p = PROCS[item.procIdx];
+    const [,,ins,desc,outros,tempo] = p;
+    const custoVar = ins + desc + outros + (tempo/60)*custoHora;
+    somaVar += custoVar * item.qtd;
+  });
+
+  const custoTotal = somaVar + rateio;
+  const denom5x = 1 - margem - imposto - taxa5x;
+  const preco = denom5x > 0 ? custoTotal / denom5x : 0;
+  const parcela5x = preco / 5;
+  const denomDebito = 1 - margem - imposto - taxaDebito;
+  const precoDebito = denomDebito > 0 ? custoTotal / denomDebito : 0;
+  const lucro = preco - custoTotal - preco*taxa5x - preco*imposto;
+  const mr = preco > 0 ? lucro/preco : 0;
+
+  // Atualiza header do card
+  const nomeEl = document.getElementById('pkg-sim-nome');
+  const nome = nomeEl ? nomeEl.value : 'Pacote';
+
+  const res = document.getElementById('pkg-sim-results');
+  if (!res) return;
+
+  res.innerHTML = `
+    <div class="nota purple" style="margin-bottom:12px">⚡ Custo fixo rateado incluído 1x no pacote: <strong>${R(rateio)}</strong></div>
+    <div class="pkg-results">
+      <div class="pkg-result pkg-r-total">
+        <div class="pr-label">Custo Total do Pacote</div>
+        <div class="pr-val">${R(custoTotal)}</div>
+      </div>
+      <div class="pkg-result pkg-r-fixo">
+        <div class="pr-label">Margem Configurada</div>
+        <div class="pr-val" style="color:var(--purple)">${P(margem)}</div>
+      </div>
+      <div class="pkg-result pkg-r-preco">
+        <div class="pr-label">💎 Preço (5x embutido)</div>
+        <div class="pr-val">${R(preco)}</div>
+      </div>
+      <div class="pkg-result pkg-r-5x">
+        <div class="pr-label">↳ Em 5x sem juros</div>
+        <div class="pr-val">${R(parcela5x)}<span style="font-size:13px;font-weight:400">/parcela</span></div>
+      </div>
+      <div class="pkg-result pkg-r-pix">
+        <div class="pr-label">Pix / Débito</div>
+        <div class="pr-val">${R(precoDebito)}</div>
+      </div>
+      <div class="pkg-result pkg-r-lucro">
+        <div class="pr-label">Lucro Líquido Est.</div>
+        <div class="pr-val">${R(lucro)}</div>
+      </div>
+    </div>
+    <div class="nota" style="margin-top:12px">
+      Margem real sobre o preço (5x): <strong>${P(mr)}</strong>
+      &nbsp;·&nbsp; Itens no pacote: <strong>${pkgSimItems.reduce((a,x)=>a+x.qtd,0)} sessões</strong>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER RESUMO
+// ═══════════════════════════════════════════════════
+function renderResumo() {
+  const tbody = document.getElementById('resumo-body');
+  tbody.innerHTML = '';
+  const {imposto, taxa5x} = getCfg();
+  PROCS.forEach((p,i)=>{
+    const {custoTotal,preco5x,parcela5x,precoMin,margem} = calcProc(i);
+    const lucro = preco5x - custoTotal - preco5x*taxa5x - preco5x*imposto;
+    const mr = preco5x>0?lucro/preco5x:0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${p[0]}</td>
+      <td class="td-right">${R(custoTotal)}</td>
+      <td class="td-right r-preco">${R(preco5x)}</td>
+      <td class="td-right" style="color:var(--teal);font-weight:600">${R(parcela5x)}</td>
+      <td class="td-right r-lucro">${R(lucro)}</td>
+      <td class="td-right r-marg">${P(margem)}</td>
+      <td class="td-right r-min">${R(precoMin)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// RECALC ALL
+// ═══════════════════════════════════════════════════
+function recalcAll() {
+  const {custoHora,depreciacao,totalFixo,rateio,imposto,taxa5x} = getCfg();
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('custo-hora', R(custoHora)+'/h');
+  set('depreciacao', R(depreciacao));
+  set('total-fixo', R(totalFixo));
+  set('custo-rateado', R(rateio));
+  // margem média
+  const avg = procMargens.reduce((a,b)=>a+b,0)/procMargens.length;
+  set('margem-media', P(avg));
+  // render each proc
+  PROCS.forEach((_,i) => renderProc(i));
+  renderSimulador();
+  renderPacotes();
+  renderResumo();
+}
+
+function setMargem(v, btn) {
+  document.querySelectorAll('.margem-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('margem-padrao').value = Math.round(v*100);
+  recalcAll();
+}
+
+// ═══════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+buildProcTabs();
+buildSimSelector();
+recalcAll();
+</script>
+</body>
+</html>
